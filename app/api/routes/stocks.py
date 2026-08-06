@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.database import SessionLocal, get_db
+from app.core.database import get_db, Sessionlocal
 from app.models.db_models import PriceSnapshot, Stock, utcnow
 from app.models.schemas import StockOut
 from app.services import shariah
@@ -73,7 +73,7 @@ def _run_ingestion_background():
     request-scoped session from Depends(get_db) may already be closed by
     the time this actually executes.
     """
-    db = SessionLocal()
+    db = Sessionlocal()
     try:
         run_ingestion(db)
     finally:
