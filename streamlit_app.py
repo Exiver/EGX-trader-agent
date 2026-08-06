@@ -23,20 +23,14 @@ st.caption("Advisory only — not investment advice. Same-session day-trading si
 with st.sidebar:
     st.header("Data")
 
-    if st.button("🔄 Refresh market data", help="Scrapes fresh prices + profiles. Can take several minutes for the full watchlist."):
-        with st.spinner("Scraping EGX prices and profiles — this can take a while for the full market..."):
-            try:
-                resp = requests.post(f"{BACKEND_URL}/stocks/ingest", timeout=900)
-                resp.raise_for_status()
-                result = resp.json()
-                st.success(f"Prices updated: {result['prices_updated']} | Profiles updated: {result['profiles_updated']}")
-                if result["errors"]:
-                    with st.expander(f"{len(result['errors'])} errors during refresh"):
-                        for err in result["errors"]:
-                            st.text(err)
-                st.cache_data.clear()
-            except requests.RequestException as e:
-                st.error(f"Refresh failed: {e}")
+    if st.button("🔄 Refresh market data", help="Starts a background scrape. Can take several minutes — check back after."):
+        try:
+            resp = requests.post(f"{BACKEND_URL}/stocks/ingest", timeout=30)
+            resp.raise_for_status()
+            st.success(resp.json()["message"])
+            st.info("Reload this page in a few minutes to see updated data.")
+        except requests.RequestException as e:
+            st.error(f"Couldn't start refresh: {e}")
 
     shariah_only = st.checkbox("☪️ Shariah-compliant only", value=False)
 

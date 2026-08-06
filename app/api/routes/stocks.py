@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.core.database import SessionLocal, get_db
 from app.models.db_models import PriceSnapshot, Stock, utcnow
-from app.models.schemas import IngestResult, StockOut
+from app.models.schemas import StockOut
 from app.services import shariah
 from app.services.ingestion import run_ingestion
 
@@ -34,7 +34,7 @@ def list_stocks(shariah: str | None = None, db: Session = Depends(get_db)):
             item.latest_price = latest
         out.append(item)
     return out
-@router.post("/ingest", response_model=IngestResult)
+@router.post("/ingest")
 def trigger_ingestion(db: Session = Depends(get_db)):
     """
     Manually trigger a refresh, fine for now - phase 10 (CI/CD) adds a 
@@ -61,3 +61,29 @@ def recheck_shariah(ticker: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
     return stock
+
+def _run_ingestion_background():
+    """
+    Runs in the background, after the HTTP response has already been sent.
+    Uses its own fresh DB session rather than the request's — the
+    request-scoped session from Depends(get_db) may already be closed by
+    the time this actually executes.
+    """
+    db = SessionLocal()
+    try:
+        run_ingestion(db)
+    finally:
+        db.close()
+
+
+@router.post("/ingest")
+def trigger_ingestion(background_tasks: BackgroundTasks):
+    """
+    Starts ingestion in the background and returns immediately — a
+    synchronous scrape of ~220 tickers takes several minutes, long enough
+    that Render's proxy (and likely other platforms') kills the connection
+    before it finishes. Check GET /stocks after a few minutes to see
+    results land.
+    """
+    background_tasks.add_task(_run_ingestion_background)
+    return {"status": "started", "message": "Ingestion running in the background. Check /stocks in a few minutes."}
