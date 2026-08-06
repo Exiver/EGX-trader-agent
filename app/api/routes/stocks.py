@@ -35,6 +35,18 @@ def list_stocks(shariah: str | None = None, db: Session = Depends(get_db)):
         out.append(item)
     return out
 
+@router.post("/ingest")
+def trigger_ingestion(background_tasks: BackgroundTasks):
+    """
+    Starts ingestion in the background and returns immediately — a
+    synchronous scrape of ~220 tickers takes several minutes, long enough
+    that Render's proxy (and likely other platforms') kills the connection
+    before it finishes. Check GET /stocks after a few minutes to see
+    results land.
+    """
+    background_tasks.add_task(_run_ingestion_background)
+    return {"status": "started", "message": "Ingestion running in the background. Check /stocks in a few minutes."}
+
 @router.post("/{ticker}/shariah-check", response_model=StockOut)
 def recheck_shariah(ticker: str, db: Session = Depends(get_db)):
     """Force a fresh Shariah classification for one ticker, right now."""
@@ -68,14 +80,3 @@ def _run_ingestion_background():
         db.close()
 
 
-@router.post("/ingest")
-def trigger_ingestion(background_tasks: BackgroundTasks):
-    """
-    Starts ingestion in the background and returns immediately — a
-    synchronous scrape of ~220 tickers takes several minutes, long enough
-    that Render's proxy (and likely other platforms') kills the connection
-    before it finishes. Check GET /stocks after a few minutes to see
-    results land.
-    """
-    background_tasks.add_task(_run_ingestion_background)
-    return {"status": "started", "message": "Ingestion running in the background. Check /stocks in a few minutes."}
