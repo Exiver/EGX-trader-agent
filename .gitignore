@@ -1,0 +1,25 @@
+# Environments
+.venv/
+venv/
+.env
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Data (added when ingestion/RAG land)
+*.db
+*.sqlite3
+/data/
+/vectorstore/

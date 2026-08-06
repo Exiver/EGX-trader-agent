@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8080"
+    env_file:
+      - .env
+    environment:
+      - PORT=8080
+    volumes:
+      - ./app:/app/app # live-reload source without rebuilding the image
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload

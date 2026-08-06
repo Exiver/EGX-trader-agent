@@ -1,0 +1,2 @@
+pytest==8.3.3
+# httpx is in requirements.txt now (needed by the app itself, not just tests)
