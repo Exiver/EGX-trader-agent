@@ -88,7 +88,7 @@ relevant. Don't force a connection to the notes section if it isn't
 actually relevant to this stock — say so instead.
 """.strip()
 
-def generate_recommendation(db: Session, ticker: str) -> RecommendationOut:
+def generate_recommendation(db: Session, ticker: str, skip_rag:bool = False) -> RecommendationOut:
     stock = db.query(Stock).filter(Stock.ticker == ticker).one_or_none()
     if stock is None:
         raise AgentError(f" Ticker '{ticker}' not found - check the symbols or run injestion first.")
@@ -110,11 +110,14 @@ def generate_recommendation(db: Session, ticker: str) -> RecommendationOut:
 
     except Exception:
         news_text = ""
-    try:
-        rag_query = f"{stock.ticker} {stock.company_name} {stock.sector or ''}"
-        rag_chunks = rag.retrieve_relevant_chunks(db, rag_query, top_k=3)
-    except rag.RagError:
+    if skip_rag:
         rag_chunks = []
+    else:
+        try:
+            rag_query = f"{stock.ticker} {stock.company_name} {stock.sector or ''}"
+            rag_chunks = rag.retrieve_relevant_chunks(db, rag_query, top_k=3)
+        except rag.RagError:
+            rag_chunks = []
 
     client = _get_client()
     prompt = _build_prompt(stock=stock, history=history, news_text=news_text, rag_chunks=rag_chunks)

@@ -40,6 +40,11 @@ class Stock(Base):
     shariah_reason: Mapped[str|None] = mapped_column(Text, nullable=True)
     shariah_checked_at: Mapped[datetime| None] = mapped_column(DateTime, nullable=True)
 
+    last_recommendation: Mapped[str | None] = mapped_column(String(16), nullable=True)  # "BUY" | "HOLD" | "SELL"
+    last_confidence: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    last_recommendation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_recommendation_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     price_snapshots: Mapped[list["PriceSnapshot"]] = relationship(
         back_populates="stock", cascade="all, delete-orphan"
     )

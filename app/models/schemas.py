@@ -14,10 +14,13 @@ class PriceSnapshotOut(BaseModel):
 class StockOut(BaseModel):
     ticker: str
     company_name: str
-    sector: str | None 
+    sector: str | None
     business_description: str | None
     shariah_status: str | None
-    shariah_reason: str| None
+    shariah_reason: str | None
+    last_recommendation: str | None = None
+    last_confidence: str | None = None
+    last_recommendation_reason: str | None = None
     latest_price: PriceSnapshotOut | None = None
 
     model_config = {"from_attributes": True}

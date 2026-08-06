@@ -121,3 +121,38 @@ if st.button("Get same-session recommendation", type="primary"):
             st.caption(rec["disclaimer"])
         except requests.RequestException as e:
             st.error(f"Couldn't get a recommendation: {e}")
+
+
+st.divider()
+st.subheader("📋 Buy Signals — full market scan")
+st.caption("Long-running background scan. May not finish in one run due to daily API quota — that's expected, rerun later to fill in more.")
+
+if st.button("Scan for buy signals"):
+    try:
+        resp = requests.post(f"{BACKEND_URL}/stocks/scan", timeout=30)
+        resp.raise_for_status()
+        st.success(resp.json()["message"])
+    except requests.RequestException as e:
+        st.error(f"Couldn't start scan: {e}")
+
+try:
+    buy_resp = requests.get(f"{BACKEND_URL}/stocks/buy-signals", timeout=30)
+    buy_resp.raise_for_status()
+    buy_signals = buy_resp.json()
+
+    if buy_signals:
+        buy_rows = [
+            {
+                "Ticker": s["ticker"],
+                "Company": s["company_name"],
+                "Confidence": s["last_confidence"],
+                "Price (EGP)": s["latest_price"]["price"] if s["latest_price"] else None,
+                "Reason": s["last_recommendation_reason"],
+            }
+            for s in buy_signals
+        ]
+        st.dataframe(buy_rows, use_container_width=True, hide_index=True)
+    else:
+        st.info("No BUY signals yet — run a scan first, or none currently qualify.")
+except requests.RequestException as e:
+    st.error(f"Couldn't load buy signals: {e}")
