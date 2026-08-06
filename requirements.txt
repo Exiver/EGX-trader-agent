@@ -18,3 +18,5 @@ google-genai==1.15.0
 # Phase 7: UI
 streamlit==1.38.0
 requests==2.32.3
+# Phase 10: Postgres driver for production DB (Neon)
+psycopg2-binary==2.9.9
