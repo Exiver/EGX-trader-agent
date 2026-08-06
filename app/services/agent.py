@@ -22,7 +22,7 @@ from app.core.config import get_settings
 from app.models.db_models import PriceSnapshot, Stock
 from app.models.schemas import RecommendationOut
 from app.services import scraper, rag
-
+from app.core.retry import call_with_retry
 MODEL_NAME = "gemini-3.5-flash"
 
 class RecommendatioLLMOutput(BaseModel):
@@ -120,7 +120,8 @@ def generate_recommendation(db: Session, ticker: str) -> RecommendationOut:
     prompt = _build_prompt(stock=stock, history=history, news_text=news_text, rag_chunks=rag_chunks)
 
     try:
-        response = client.models.generate_content(
+        response = call_with_retry(
+            client.models.generate_content,
             model=MODEL_NAME,
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -128,8 +129,7 @@ def generate_recommendation(db: Session, ticker: str) -> RecommendationOut:
                 response_schema=RecommendatioLLMOutput,
             ),
         )
-
-    except Exception as e :
+    except Exception as e:
         raise AgentError(f"Gemini request failed: {e}") from e
 
     parsed: RecommendatioLLMOutput | None = response.parsed

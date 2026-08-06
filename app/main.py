@@ -3,6 +3,10 @@ from fastapi import FastAPI
 
 from app.api.routes import health, recommendations, stocks, rag
 from app.core.database import init_db
+from app.core.logging_config import configure_logging
+
+configure_logging()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()

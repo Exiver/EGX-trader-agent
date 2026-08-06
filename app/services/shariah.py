@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.models.db_models import Stock
-
+from app.core.retry import call_with_retry
 MODEL_NAME = "gemini-3.5-flash"
 
 
@@ -77,7 +77,8 @@ def classify_stock(stock: Stock) -> ShariahLLMOutput:
     prompt = _build_prompt(stock)
 
     try:
-        response = client.models.generate_content(
+        response = call_with_retry(
+            client.models.generate_content,
             model=MODEL_NAME,
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -85,7 +86,7 @@ def classify_stock(stock: Stock) -> ShariahLLMOutput:
                 response_schema=ShariahLLMOutput,
             ),
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise ShariahCheckError(f"Gemini request failed for {stock.ticker}: {e}") from e
 
     parsed: ShariahLLMOutput | None = response.parsed

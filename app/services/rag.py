@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.models.db_models import RagChunk
-
+from app.core.retry import call_with_retry
 EMBEDDING_MODEL = "gemini-embedding-001"
 CHUNK_SIZE = 800     # characters, not tokens — simple and good enough for notes
 CHUNK_OVERLAP = 100
@@ -51,8 +51,8 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
         return []
     client = _get_client()
     try:
-        response = client.models.embed_content(model=EMBEDDING_MODEL, contents=texts)
-    except Exception as e:  # noqa: BLE001
+        response = call_with_retry(client.models.embed_content, model=EMBEDDING_MODEL, contents=texts)
+    except Exception as e:
         raise RagError(f"Embedding request failed: {e}") from e
     return [emb.values for emb in response.embeddings]
 

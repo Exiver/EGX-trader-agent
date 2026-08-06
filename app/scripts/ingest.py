@@ -1,26 +1,28 @@
-"""
-Manual ingestion run: python -m app.scripts.ingest
-
-Useful for testing the scraper directly (with real error tracebacks) without
-going through the API, and for later plugging into a cron job / scheduler."""
+"""Manual ingestion run: python -m app.scripts.ingest"""
+import logging
 
 from app.core.database import Sessionlocal, init_db
+from app.core.logging_config import configure_logging
 from app.services.ingestion import run_ingestion
+
+logger = logging.getLogger(__name__)
+
+
 def main() -> None:
-    init_db()                                    
+    configure_logging()
+    init_db()
     db = Sessionlocal()
     try:
         result = run_ingestion(db)
-        print(f"price updated: {result.prices_updated}")
-        print(f"prefiles updated: {result.profiles_updated}")
+        logger.info(f"Prices updated: {result.prices_updated}")
+        logger.info(f"Profiles updated: {result.profiles_updated}")
         if result.errors:
-            print("Errors: ")
+            logger.warning(f"{len(result.errors)} errors during run:")
             for err in result.errors:
-                print(f"  - {err}")
-
+                logger.warning(f"  - {err}")
     finally:
         db.close()
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
