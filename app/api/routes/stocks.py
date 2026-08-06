@@ -34,14 +34,6 @@ def list_stocks(shariah: str | None = None, db: Session = Depends(get_db)):
             item.latest_price = latest
         out.append(item)
     return out
-@router.post("/ingest")
-def trigger_ingestion(db: Session = Depends(get_db)):
-    """
-    Manually trigger a refresh, fine for now - phase 10 (CI/CD) adds a 
-    scheduled job so this runs automaticlly during EGX traiding hours 
-    insted of needing a manual hit."""
-
-    return run_ingestion(db)
 
 @router.post("/{ticker}/shariah-check", response_model=StockOut)
 def recheck_shariah(ticker: str, db: Session = Depends(get_db)):
