@@ -129,14 +129,14 @@ st.caption("Long-running background scan. May not finish in one run due to daily
 
 if st.button("Scan for buy signals"):
     try:
-        resp = requests.post(f"{BACKEND_URL}/stocks/scan", timeout=30)
+        resp = requests.post(f"{BACKEND_URL}/stocks/scan", timeout=(10, 600))
         resp.raise_for_status()
         st.success(resp.json()["message"])
     except requests.RequestException as e:
         st.error(f"Couldn't start scan: {e}")
 
 try:
-    buy_resp = requests.get(f"{BACKEND_URL}/stocks/buy-signals", timeout=30)
+    buy_resp = requests.get(f"{BACKEND_URL}/stocks/buy-signals", timeout=(10, 600))
     buy_resp.raise_for_status()
     buy_signals = buy_resp.json()
 

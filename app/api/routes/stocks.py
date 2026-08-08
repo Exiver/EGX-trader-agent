@@ -1,11 +1,13 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db, Sessionlocal
 from app.models.db_models import PriceSnapshot, Stock, utcnow
 from app.models.schemas import StockOut
 from app.services import shariah
 from app.services.ingestion import run_ingestion
+# Import your new batch scanning function
+from app.services.scanner import scan_for_recommendations
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
 
@@ -47,6 +49,16 @@ def trigger_ingestion(background_tasks: BackgroundTasks):
     background_tasks.add_task(_run_ingestion_background)
     return {"status": "started", "message": "Ingestion running in the background. Check /stocks in a few minutes."}
 
+@router.post("/scan")
+def trigger_scan(background_tasks: BackgroundTasks, batch_size: int = 10):
+    """
+    Starts the batch recommendation scan in the background and returns 
+    immediately. Generates BUY/HOLD/SELL signals via Gemini without 
+    holding the HTTP connection open.
+    """
+    background_tasks.add_task(_run_scan_background, batch_size)
+    return {"status": "started", "message": f"Market scan running in the background (batch size: {batch_size}). Check results in a few minutes."}
+
 @router.post("/{ticker}/shariah-check", response_model=StockOut)
 def recheck_shariah(ticker: str, db: Session = Depends(get_db)):
     """Force a fresh Shariah classification for one ticker, right now."""
@@ -79,4 +91,14 @@ def _run_ingestion_background():
     finally:
         db.close()
 
-
+def _run_scan_background(batch_size: int):
+    """
+    Runs the market scan in the background. Creates a dedicated, 
+    thread-safe database session specifically for this batch job 
+    to prevent closed-session errors.
+    """
+    db = Sessionlocal()
+    try:
+        scan_for_recommendations(db, batch_size=batch_size)
+    finally:
+        db.close()
